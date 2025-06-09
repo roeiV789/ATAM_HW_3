@@ -135,7 +135,7 @@ parse_lines:
 		popq %r15
 		popq %r14
 		popq %r13
-		popq %r12
+		popq %r12
 		leave
 		ret
 			
