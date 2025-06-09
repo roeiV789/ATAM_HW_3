@@ -24,6 +24,7 @@ compute_char_repeats:
 		
 	
 	.end_loop_ccr:
+		leave
 		ret
 
 parse_lines:
