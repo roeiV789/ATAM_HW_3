@@ -109,9 +109,9 @@ parse_lines:
 		end_of_line:
 		
 			max_line_check:
-				cmpl %rcx, %ebx
+				cmpq %rcx, %rbx
 				jle calc_appearances
-				movl %ebx, %rcx
+				movq %rbx, %rcx
 			
 			calc_appearances:
 				movq %r8, %rdi #move buffer
@@ -122,9 +122,9 @@ parse_lines:
 				popq %rcx
 				
 			max_special_check:
-				cmpl %r10b, %eax
+				cmpq %r10, %rax
 				jle update_counters_end_of_line
-				movl %eax, %r10b 
+				movq %rax, %r10 
 	
 			update_counters_end_of_line:
 				#reached a new line, so we need to reset counter of line length, increment lines in file counter, and reset the buffer
