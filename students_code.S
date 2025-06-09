@@ -2,51 +2,30 @@
 
 .section .text
 compute_char_repeats:
-	#manual:
-	#rdi = buffer
-	#rsi = line_length
-	#rdx = special_char
+    setup_ccr:
+		xorq %rax, %rax
+        leaq (%rdi ,%rsi), %rcx
+		cmpq $0 , %rsi
+		je end_loop_ccr
 
-	xorq %rax, %rax
-		char_check_loop:
-			cmpq $0, %rsi
-			je end_of_func
-			cmpb (%rdi), %dl
-			jne end_loop
-			addq $1, %rax
-
-			end_loop:
-				subq $1, %rsi
-				incq %rdi
-				jmp char_check_loop
-			
-	end_of_func:
+    loop_ccr:
+    check_length_ccr:
+        cmpq %rcx,%rdi
+		jl check_character_ccr
+		jmp end_loop_ccr
+		
+	check_character_ccr:
+		movb (%rdi), %r8b
+		inc %rdi
+		cmpb %r8b, %dl
+		jne loop_ccr
+		inc %rax
+		jmp loop_ccr
+		
+	
+	end_loop_ccr:
 		ret
 
-#compute_char_repeats:
-#    setup_ccr:
-#		xorq %rax, %rax
-#       leaq (%rdi ,%rsi), %rcx
-#		cmpq $0 , %rsi
-#		je end_loop_ccr
-#
-#    .loop_ccr:
-#    .check_length_ccr:
-#        cmpq %rcx,%rdi
-#		jl .check_character_ccr
-#		jmp .end_loop_ccr
-#		
-#	.check_character_ccr:
-#		movb (%rdi), %r8b
-#		incq %rdi
-#		cmpb %r8b, %dl
-#		jne .loop_ccr
-#		incq %rax
-#		jmp .loop_ccr
-#		
-#	
-#	.end_loop_ccr:
-#		ret
 
 parse_lines:
     # Function parameters:
@@ -96,7 +75,7 @@ parse_lines:
 		movq %r12, %rdi 
 		syscall
 		#we don't check if file opened successfully because it is given that this should work
-		movq %rax,%r11 
+		movq %rax,%r14 
 		
 	#allocate space for reading on the stack - 128+16
 	subq $144, %rsp
@@ -107,7 +86,7 @@ parse_lines:
 		jmp read_from_file		
 				
 		end_of_line:
-		
+			.db1:
 			max_line_check:
 				cmpq %rcx, %rbx
 				jle calc_appearances
@@ -120,13 +99,14 @@ parse_lines:
 				pushq %rcx
 				call compute_char_repeats
 				popq %rcx
-				
+			.db2:	
 			max_special_check:
 				cmpq %r10, %rax
 				jle update_counters_end_of_line
 				movq %rax, %r10 
 	
 			update_counters_end_of_line:
+			.db3:
 				#reached a new line, so we need to reset counter of line length, increment lines in file counter, and reset the buffer
 				xorq %rbx, %rbx
 				addq $1, %r9
@@ -139,7 +119,7 @@ parse_lines:
 
 
 	read_from_file:
-			movq %r11,%rdi #we move the file descriptor
+			movq %r14,%rdi #we move the file descriptor
 			movq $0, %rax #read-only
 			movq $1 , %rdx #number of bytes to read
 			movq %r12, %rsi # buffer
@@ -148,10 +128,11 @@ parse_lines:
 			cmpq $0, %rax
 			je end_of_line
 			
+		.db4:
 			cmpb $10, (%r12)
 			je end_of_line
-			addq $1, %r12
-			addq $1, %rbx #increment letter counter in current string
+			inc %r12
+			inc %rbx #increment letter counter in current string
 			jmp continue_loop
 		
 	
@@ -168,4 +149,3 @@ parse_lines:
 		popq %r12
 		leave
 		ret
-			
