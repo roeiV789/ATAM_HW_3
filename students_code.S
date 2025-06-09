@@ -8,27 +8,27 @@ compute_char_repeats:
 	#rdx = special_char
 
 	xorq %rax, %rax
-		.char_check_loop:
+		char_check_loop:
 			cmpq $0, %rsi
-			je .end_of_func
+			je end_of_func
 			cmpb (%rdi), %dl
-			jne .end_loop
+			jne end_loop
 			addq $1, %rax
 
-			.end_loop:
+			end_loop:
 				subq $1, %rsi
 				incq %rdi
-				jmp .char_check_loop
+				jmp char_check_loop
 			
-	.end_of_func:
+	end_of_func:
 		ret
 
 #compute_char_repeats:
-#    .setup_ccr:
+#    setup_ccr:
 #		xorq %rax, %rax
-#        leaq (%rdi ,%rsi), %rcx
+#       leaq (%rdi ,%rsi), %rcx
 #		cmpq $0 , %rsi
-#		je .end_loop_ccr
+#		je end_loop_ccr
 #
 #    .loop_ccr:
 #    .check_length_ccr:
@@ -57,17 +57,17 @@ parse_lines:
 	#manual:
 	#rsi,rdx,rax,rdi - used as function parameters for calls
 	#rbx - counts the length of the current line
-	#rcx -  
+	#rcx - holds the line_max_len
 	#r8 - holds a pointer to the start of the buffer
 	#r9 - will count the number of lines
-	#r10 - 
+	#r10 - holds line_max_repeat
 	#r11 - holds the file descriptor
 	#r12 - holds a pointer to the current char
-	#r13 - holds pointer to line_max_len
-	#r14 - holds pointer to line_max_repeat
+	#r13 - 
+	#r14 - 
 	#r15 - holds the special char
 	
-	.setup_pl:
+	setup_pl:
 		#saving registers that are used in the program by caller convention
 		pushq %rbp 
 		movq %rsp, %rbp 
@@ -76,18 +76,20 @@ parse_lines:
 		pushq %r13
 		pushq %r14
 		pushq %r15
+		pushq %rsi
+		pushq %rdx
 		
 		movq %rdi, %r12 
-		movq %rsi, %r13 
-		movq %rdx, %r14 
 		
 		xorq %r9, %r9 
 		xorq %rbx, %rbx 
+		xorq %rcx, %rcx
+		xorq %r10, %r10
 		
 		call get_the_special_char
 		movb %al, %r15b
 		
-	.open_file:
+	open_file:
 		#now we will open the file so we can read from it
 		movq $0, %rsi
 		movq $2, %rax
@@ -101,59 +103,65 @@ parse_lines:
 	movq %rsp, %r8
 	movq %r8, %r12 #initiate the current letter
 	
-	.process_file_lines:	
-		jmp .read_from_file		
+	process_file_lines:	
+		jmp read_from_file		
 				
-		.end_of_line:
+		end_of_line:
 		
-			.max_line_check:
-				cmpl (%r13), %ebx
-				jle .calc_appearances
-				movl %ebx, (%r13)
+			max_line_check:
+				cmpl %rcx, %ebx
+				jle calc_appearances
+				movl %ebx, %rcx
 			
-			.calc_appearances:
+			calc_appearances:
 				movq %r8, %rdi #move buffer
 				movb %r15b, %dl #move special char
 				movq %rbx, %rsi #move line length
+				pushq %rcx
 				call compute_char_repeats
-			
-			.max_special_check:
-				cmpl (%r14), %eax
-				jle .update_counters_end_of_line
-				movl %eax, (%r14) 
+				popq %rcx
+				
+			max_special_check:
+				cmpl %r10b, %eax
+				jle update_counters_end_of_line
+				movl %eax, %r10b 
 	
-			.update_counters_end_of_line:
+			update_counters_end_of_line:
 				#reached a new line, so we need to reset counter of line length, increment lines in file counter, and reset the buffer
 				xorq %rbx, %rbx
 				addq $1, %r9
 				movq %r8, %r12
-				cmpq $0, %rcx #rcx holds the number of bytes that were read in last syscall - check if the current check is the last one
-				je .end_file
-		.continue_loop:
-			jmp .process_file_lines
+				cmpq $0, %r13 #rcx holds the number of bytes that were read in last syscall - check if the current check is the last one
+				je end_file
+		continue_loop:
+			jmp process_file_lines
 		
 
 
-	.read_from_file:
+	read_from_file:
 			movq %r11,%rdi #we move the file descriptor
 			movq $0, %rax #read-only
 			movq $1 , %rdx #number of bytes to read
 			movq %r12, %rsi # buffer
 			syscall #after this executes, we have a pointer to a letter stored in %r12
-			movq %rax, %rcx
+			movq %rax, %r13
 			cmpq $0, %rax
-			je .end_of_line
-			movq %rax, %rcx
+			je end_of_line
+			
 			cmpb $10, (%r12)
-			je .end_of_line
+			je end_of_line
 			addq $1, %r12
 			addq $1, %rbx #increment letter counter in current string
-			jmp .continue_loop
+			jmp continue_loop
 		
 	
-	.end_file:
-		movq %r9, %rax
+	end_file:
 		addq $144, %rsp
+		popq %rdx
+		popq %rsi
+		movq %r9, %rax
+		movq %rcx, (%rsi)
+		movq %r10, (%rdx)
 		popq %r15
 		popq %r14
 		popq %r13
