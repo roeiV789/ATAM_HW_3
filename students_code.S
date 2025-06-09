@@ -2,29 +2,51 @@
 
 .section .text
 compute_char_repeats:
-    .setup_ccr:
-		xorq %rax, %rax
-        leaq (%rdi ,%rsi), %rcx
-		cmpq $0 , %rsi
-		je .end_loop_ccr
+	#manual:
+	#rdi = buffer
+	#rsi = line_length
+	#rdx = special_char
 
-    .loop_ccr:
-    .check_length_ccr:
-        cmpq %rcx,%rdi
-		jl .check_character_ccr
-		jmp .end_loop_ccr
-		
-	.check_character_ccr:
-		movb (%rdi), %r8b
-		incq %rdi
-		cmpb %r8b, %dl
-		jne .loop_ccr
-		incq %rax
-		jmp .loop_ccr
-		
-	
-	.end_loop_ccr:
+	xorq %rax, %rax
+		.char_check_loop:
+			cmpq $0, %rsi
+			je .end_of_func
+			cmpb (%rdi), %dl
+			jne .end_loop
+			addq $1, %rax
+
+			.end_loop:
+				subq $1, %rsi
+				incq %rdi
+				jmp .char_check_loop
+			
+	.end_of_func:
 		ret
+
+#compute_char_repeats:
+#    .setup_ccr:
+#		xorq %rax, %rax
+#        leaq (%rdi ,%rsi), %rcx
+#		cmpq $0 , %rsi
+#		je .end_loop_ccr
+#
+#    .loop_ccr:
+#    .check_length_ccr:
+#        cmpq %rcx,%rdi
+#		jl .check_character_ccr
+#		jmp .end_loop_ccr
+#		
+#	.check_character_ccr:
+#		movb (%rdi), %r8b
+#		incq %rdi
+#		cmpb %r8b, %dl
+#		jne .loop_ccr
+#		incq %rax
+#		jmp .loop_ccr
+#		
+#	
+#	.end_loop_ccr:
+#		ret
 
 parse_lines:
     # Function parameters:
@@ -45,7 +67,7 @@ parse_lines:
 	#r14 - holds pointer to line_max_repeat
 	#r15 - holds the special char
 	
-	setup_pl:
+	.setup_pl:
 		#saving registers that are used in the program by caller convention
 		pushq %rbp 
 		movq %rsp, %rbp 
@@ -65,7 +87,7 @@ parse_lines:
 		call get_the_special_char
 		movb %al, %r15b
 		
-	open_file:
+	.open_file:
 		#now we will open the file so we can read from it
 		movq $0, %rsi
 		movq $2, %rax
