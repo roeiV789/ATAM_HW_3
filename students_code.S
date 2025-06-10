@@ -40,10 +40,10 @@ parse_lines:
 	#r8 - holds a pointer to the start of the buffer
 	#r9 - will count the number of lines
 	#r10 - holds line_max_repeat
-	#r11 - holds the file descriptor
+	#r11 - 
 	#r12 - holds a pointer to the current char
 	#r13 - 
-	#r14 - 
+	#r14 - holds the file descriptor
 	#r15 - holds the special char
 	
 	setup_pl:
@@ -65,15 +65,42 @@ parse_lines:
 		xorq %rcx, %rcx
 		xorq %r10, %r10
 		
+		pushq %rdi
+		pushq %rsi
+		pushq %rdx
+		pushq %rcx
+		pushq %r8
+		pushq %r9
+		pushq %r10
+		pushq %r11
 		call get_the_special_char
+		popq %r11
+		popq %r10
+		popq %r9
+		popq %r8
+		popq %rcx
+		popq %rdx
+		popq %rsi
+		popq %rdi
+		
 		movb %al, %r15b
 		
 	open_file:
 		#now we will open the file so we can read from it
 		movq $0, %rsi
 		movq $2, %rax
-		movq %r12, %rdi 
+		movq %r12, %rdi
+		pushq %rcx
+		pushq %r8
+		pushq %r9
+		pushq %r10
+		pushq %r11
 		syscall
+		popq %r11
+		popq %r10
+		popq %r9
+		popq %r8
+		popq %rcx
 		#we don't check if file opened successfully because it is given that this should work
 		movq %rax,%r14 
 		
@@ -97,16 +124,22 @@ parse_lines:
 				movb %r15b, %dl #move special char
 				movq %rbx, %rsi #move line length
 				pushq %rcx
+				pushq %r8
+				pushq %r9
+				pushq %r10
+				pushq %r11
 				call compute_char_repeats
+				popq %r11
+				popq %r10
+				popq %r9
+				popq %r8		
 				popq %rcx
-			.db2:	
 			max_special_check:
 				cmpq %r10, %rax
 				jle update_counters_end_of_line
 				movq %rax, %r10 
 	
 			update_counters_end_of_line:
-			.db3:
 				#reached a new line, so we need to reset counter of line length, increment lines in file counter, and reset the buffer
 				xorq %rbx, %rbx
 				addq $1, %r9
@@ -123,7 +156,17 @@ parse_lines:
 			movq $0, %rax #read-only
 			movq $1 , %rdx #number of bytes to read
 			movq %r12, %rsi # buffer
+			pushq %rcx
+			pushq %r8
+			pushq %r9
+			pushq %r10
+			pushq %r11	
 			syscall #after this executes, we have a pointer to a letter stored in %r12
+			popq %r11
+			popq %r10
+			popq %r9
+			popq %r8		
+			popq %rcx
 			movq %rax, %r13
 			cmpq $0, %rax
 			je end_of_line
@@ -147,5 +190,6 @@ parse_lines:
 		popq %r14
 		popq %r13
 		popq %r12
+		popq %rbx
 		leave
 		ret
