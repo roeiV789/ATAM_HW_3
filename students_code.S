@@ -184,8 +184,8 @@ parse_lines:
 		popq %rdx
 		popq %rsi
 		movq %r9, %rax
-		movq %rcx, (%rsi)
-		movq %r10, (%rdx)
+		movl %ecx, (%rsi)
+		movl %r10d, (%rdx)
 		popq %r15
 		popq %r14
 		popq %r13
